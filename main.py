@@ -1,14 +1,16 @@
 import os
+import threading
 import requests
 from typing import Final
+from flask import Flask
 from telegram import Update
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
 
-
-
+# Telegram Bot Token and Configuration
 TOKEN: Final = '6800073194:AAEb3PrGZCQpeXRzoeOVINoyBVRZBhjpBLM'
 BOT_USERNAME: Final = '@bot_impulse_bot'
 
+# LeetCode API Configuration
 LEETCODE_API_ENDPOINT = 'https://leetcode.com/graphql'
 DAILY_CODING_CHALLENGE_QUERY = '''
 query questionOfToday {
@@ -17,25 +19,8 @@ query questionOfToday {
         userStatus
         link
         question {
-			title
-			title
-			titleSlug
-			hasVideoSolution
-			hasSolution
-			topicTags {
-				name
-				id
-				slug
-			}
             title
-			titleSlug
-			hasVideoSolution
-			hasSolution
-			topicTags {
-				name
-				id
-				slug
-			}
+            titleSlug
         }
     }
 }'''
@@ -90,7 +75,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if 'hello' in text:
         response = 'Hello! What do you require?'
     elif 'leetcode' in text:
-        response = await leetcode_command(update, context)
+        await leetcode_command(update, context)
         return
     else:
         response = 'I do not comprehend this absurd sentence.'
@@ -103,20 +88,40 @@ async def error_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     print(f'Update {update} caused error {context.error}')
 
 
+# Flask App for Health Check
+health_app = Flask(__name__)
+
+@health_app.route('/')
+def health_check():
+    return "Bot is alive and healthy!", 200
+
+
+# Run Flask server in a separate thread
+def run_flask():
+    health_app.run(host='0.0.0.0', port=8080)
+
+
 if __name__ == '__main__':
     print('Starting bot...')
+
+    # Start Flask in a separate thread for health checks
+    flask_thread = threading.Thread(target=run_flask)
+    flask_thread.start()
+
+    # Initialize the Telegram bot
     app = Application.builder().token(TOKEN).build()
 
-    # Commands
+    # Command Handlers
     app.add_handler(CommandHandler('start', start_command))
     app.add_handler(CommandHandler('help', help_command))
     app.add_handler(CommandHandler('leetcode', leetcode_command))
 
-    # Messages
+    # Message Handlers
     app.add_handler(MessageHandler(filters.TEXT, handle_message))
 
-    # Errors
+    # Error Handler
     app.add_error_handler(error_handler)
 
+    # Polling
     print('Polling...')
     app.run_polling(poll_interval=3)
