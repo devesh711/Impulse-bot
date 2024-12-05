@@ -7,7 +7,7 @@ from telegram import Update
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
 
 # Telegram Bot Token and Configuration
-TOKEN: Final = '6800073194:AAEb3PrGZCQpeXRzoeOVINoyBVRZBhjpBLM'
+TOKEN: Final = os.getenv('TELEGRAM_BOT_TOKEN')
 BOT_USERNAME: Final = '@bot_impulse_bot'
 
 # LeetCode API Configuration
